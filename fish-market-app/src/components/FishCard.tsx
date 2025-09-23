@@ -5,6 +5,7 @@ import { Plus, Minus, GitCompare } from 'lucide-react';
 import { Fish } from '@/types';
 import { useCart } from '@/contexts/CartContext';
 import { useState } from 'react';
+import { getFishImagePath, getFishImageAlt } from '@/lib/fishImageUtils';
 
 interface FishCardProps {
   fish: Fish;
@@ -53,12 +54,19 @@ const FishCard = ({ fish, index }: FishCardProps) => {
     >
       <div className="relative h-64 w-full overflow-hidden">
         <Image
-          src={fish.image}
-          alt={fish.name}
+          src={getFishImagePath(fish.name)}
+          alt={getFishImageAlt(fish.name)}
           fill
           className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           priority={index < 4}
+          onError={(e) => {
+            // Fallback to original image if local image fails to load
+            const target = e.target as HTMLImageElement;
+            if (target.src !== fish.image) {
+              target.src = fish.image;
+            }
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
         <div className="absolute top-4 right-4">

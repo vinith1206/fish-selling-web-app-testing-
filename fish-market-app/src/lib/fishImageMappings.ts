@@ -1,0 +1,156 @@
+
+// Auto-generated fish image mapping
+export interface FishImageMapping {
+  fishName: string;
+  filename: string;
+  status: 'downloaded' | 'exists' | 'not_found' | 'error';
+  url: string | null;
+  searchTerms?: string[];
+  error?: string;
+}
+
+export const fishImageMappings: FishImageMapping[] = [
+  {
+    "fishName": "Betta Fish - Half Moon",
+    "filename": "betta-fish-half-moon.jpg",
+    "status": "downloaded",
+    "url": "/fish-images/betta-fish-half-moon.jpg",
+    "searchTerms": [
+      "betta fish",
+      "half moon betta",
+      "siamese fighting fish"
+    ]
+  },
+  {
+    "fishName": "Guppy - Mixed Colors",
+    "filename": "guppy-mixed-colors.jpg",
+    "status": "downloaded",
+    "url": "/fish-images/guppy-mixed-colors.jpg",
+    "searchTerms": [
+      "guppy fish",
+      "poecilia reticulata",
+      "rainbow fish"
+    ]
+  },
+  {
+    "fishName": "Tiger Oscar",
+    "filename": "tiger-oscar.jpg",
+    "status": "downloaded",
+    "url": "/fish-images/tiger-oscar.jpg",
+    "searchTerms": [
+      "tiger oscar fish",
+      "astronotus ocellatus",
+      "oscar cichlid"
+    ]
+  },
+  {
+    "fishName": "Arowana - Silver",
+    "filename": "arowana-silver.jpg",
+    "status": "downloaded",
+    "url": "/fish-images/arowana-silver.jpg",
+    "searchTerms": [
+      "silver arowana",
+      "osteoglossum bicirrhosum",
+      "dragon fish"
+    ]
+  },
+  {
+    "fishName": "Glow Tetra",
+    "filename": "glow-tetra.jpg",
+    "status": "downloaded",
+    "url": "/fish-images/glow-tetra.jpg",
+    "searchTerms": [
+      "glow tetra",
+      "glofish tetra",
+      "fluorescent tetra"
+    ]
+  },
+  {
+    "fishName": "Red Cherry Shrimp",
+    "filename": "red-cherry-shrimp.jpg",
+    "status": "downloaded",
+    "url": "/fish-images/red-cherry-shrimp.jpg",
+    "searchTerms": [
+      "red cherry shrimp",
+      "neocaridina davidi",
+      "cherry shrimp"
+    ]
+  },
+  {
+    "fishName": "Java Moss",
+    "filename": "java-moss.jpg",
+    "status": "downloaded",
+    "url": "/fish-images/java-moss.jpg",
+    "searchTerms": [
+      "java moss",
+      "taxiphyllum barbieri",
+      "aquarium moss"
+    ]
+  },
+  {
+    "fishName": "Neon Tetra",
+    "filename": "neon-tetra.jpg",
+    "status": "downloaded",
+    "url": "/fish-images/neon-tetra.jpg",
+    "searchTerms": [
+      "neon tetra",
+      "paracheirodon innesi",
+      "neon fish"
+    ]
+  },
+  {
+    "fishName": "Betta Fish",
+    "filename": "betta-fish.jpg",
+    "status": "downloaded",
+    "url": "/fish-images/betta-fish.jpg",
+    "searchTerms": [
+      "betta fish",
+      "betta splendens",
+      "siamese fighting fish"
+    ]
+  },
+  {
+    "fishName": "Angelfish",
+    "filename": "angelfish.jpg",
+    "status": "downloaded",
+    "url": "/fish-images/angelfish.jpg",
+    "searchTerms": [
+      "angelfish",
+      "pterophyllum scalare",
+      "freshwater angelfish"
+    ]
+  },
+  {
+    "fishName": "Guppy",
+    "filename": "guppy.jpg",
+    "status": "downloaded",
+    "url": "/fish-images/guppy.jpg",
+    "searchTerms": [
+      "guppy fish",
+      "poecilia reticulata",
+      "guppy"
+    ]
+  },
+  {
+    "fishName": "Goldfish",
+    "filename": "goldfish.jpg",
+    "status": "downloaded",
+    "url": "/fish-images/goldfish.jpg",
+    "searchTerms": [
+      "goldfish",
+      "carassius auratus",
+      "gold fish"
+    ]
+  },
+  {
+    "fishName": "Discus",
+    "filename": "discus.jpg",
+    "status": "downloaded",
+    "url": "/fish-images/discus.jpg",
+    "searchTerms": [
+      "discus fish",
+      "symphysodon",
+      "discus cichlid"
+    ]
+  }
+];
