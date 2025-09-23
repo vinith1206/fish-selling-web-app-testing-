@@ -1,0 +1,85 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Betta Fish Logo - Vibrant Design -->
+  <defs>
+    <!-- Body gradient - Blue to darker blue -->
+    <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#2563EB;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Head gradient - Bright red -->
+    <linearGradient id="headGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#EF4444;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DC2626;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Dorsal fin gradient - Blue to teal to yellow -->
+    <linearGradient id="dorsalGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#14B8A6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EAB308;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Caudal fin gradient - Red to orange to yellow -->
+    <linearGradient id="caudalGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#EF4444;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#F97316;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EAB308;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Anal fin gradient - Red to orange to yellow -->
+    <linearGradient id="analGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#EF4444;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#F97316;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EAB308;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Pectoral fin gradient - Red to blue -->
+    <linearGradient id="pectoralGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#EF4444;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Fish Body - Blue with scale details -->
+  <ellipse cx="32" cy="32" rx="18" ry="10" fill="url(#bodyGradient)" stroke="#EAB308" stroke-width="2"/>
+  
+  <!-- Scale details on body -->
+  <path d="M20 28 Q25 26 30 28 Q25 30 20 28" fill="none" stroke="#1E40AF" stroke-width="1"/>
+  <path d="M22 30 Q27 28 32 30 Q27 32 22 30" fill="none" stroke="#1E40AF" stroke-width="1"/>
+  <path d="M24 32 Q29 30 34 32 Q29 34 24 32" fill="none" stroke="#1E40AF" stroke-width="1"/>
+  
+  <!-- Fish Head - Bright red -->
+  <ellipse cx="18" cy="32" rx="8" ry="10" fill="url(#headGradient)" stroke="#EAB308" stroke-width="2"/>
+  
+  <!-- Fish Eye -->
+  <circle cx="16" cy="30" r="2" fill="#000000"/>
+  <circle cx="15.5" cy="29.5" r="0.5" fill="#FFFFFF"/>
+  
+  <!-- Dorsal Fin - Blue to teal to yellow with flame patterns -->
+  <path d="M22 18 Q30 12 40 18 Q35 25 22 18" fill="url(#dorsalGradient)" stroke="#EAB308" stroke-width="1.5"/>
+  <!-- Flame patterns in dorsal fin -->
+  <path d="M25 20 Q28 18 31 20 Q28 22 25 20" fill="none" stroke="#F97316" stroke-width="1"/>
+  <path d="M30 19 Q33 17 36 19 Q33 21 30 19" fill="none" stroke="#EAB308" stroke-width="1"/>
+  
+  <!-- Caudal Fin - Large and fan-like with flame patterns -->
+  <path d="M48 28 Q58 20 62 28 Q58 36 48 28" fill="url(#caudalGradient)" stroke="#EAB308" stroke-width="1.5"/>
+  <!-- Flame patterns in caudal fin -->
+  <path d="M50 30 Q53 28 56 30 Q53 32 50 30" fill="none" stroke="#F97316" stroke-width="1"/>
+  <path d="M52 29 Q55 27 58 29 Q55 31 52 29" fill="none" stroke="#EAB308" stroke-width="1"/>
+  <path d="M54 31 Q57 29 60 31 Q57 33 54 31" fill="none" stroke="#F97316" stroke-width="1"/>
+  
+  <!-- Anal Fin - Red to orange to yellow -->
+  <path d="M22 44 Q30 50 40 44" fill="url(#analGradient)" stroke="#EAB308" stroke-width="1.5"/>
+  <!-- Flame patterns in anal fin -->
+  <path d="M25 45 Q28 47 31 45 Q28 43 25 45" fill="none" stroke="#F97316" stroke-width="1"/>
+  <path d="M30 44 Q33 46 36 44 Q33 42 30 44" fill="none" stroke="#EAB308" stroke-width="1"/>
+  
+  <!-- Pectoral Fins - Red to blue -->
+  <ellipse cx="24" cy="36" rx="4" ry="3" fill="url(#pectoralGradient)" stroke="#EAB308" stroke-width="1"/>
+  <ellipse cx="26" cy="38" rx="3" ry="2" fill="url(#pectoralGradient)" stroke="#EAB308" stroke-width="1"/>
+  
+  <!-- Bright yellow outline/glow effect -->
+  <ellipse cx="32" cy="32" rx="20" ry="12" fill="none" stroke="#EAB308" stroke-width="3" opacity="0.8"/>
+</svg>
