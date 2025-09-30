@@ -191,7 +191,8 @@ const isServiceableRegion = (region: string): boolean => {
 const fetchFromDataGov = async (pincode: string, config: ApiConfig): Promise<ApiPincodeData | null> => {
   try {
     if (!config.apiKey || !config.resourceId) {
-      throw new Error('API key or resource ID not configured');
+      console.warn('API key or resource ID not configured, skipping external API call');
+      return null;
     }
 
     // Use the correct data.gov.in API format

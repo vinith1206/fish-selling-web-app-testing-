@@ -37,6 +37,7 @@ router.post('/', async (req, res) => {
     const orderId = `ORD-${Date.now()}`;
     
     let subtotal = 0;
+    let totalWeightGrams = 0;
     const orderItems = [];
     
     for (const item of items) {
@@ -45,13 +46,27 @@ router.post('/', async (req, res) => {
         return res.status(400).json({ message: `Fish with ID ${item.fish._id} not found` });
       }
       
-      const itemTotal = fish.price * item.quantity;
+      // Calculate effective price (same logic as frontend)
+      let effectivePrice = fish.price;
+      if (fish.discountPrice) {
+        effectivePrice = fish.discountPrice;
+      } else if (fish.discount && fish.originalPrice) {
+        effectivePrice = fish.originalPrice * (1 - fish.discount / 100);
+      }
+      
+      const itemTotal = effectivePrice * item.quantity;
       subtotal += itemTotal;
       
-      orderItems.push({ fish: fish._id, quantity: item.quantity, price: fish.price });
+      // Calculate total weight in grams
+      const perUnitWeight = fish.weight || 0; // grams per unit
+      totalWeightGrams += perUnitWeight * item.quantity;
+      
+      orderItems.push({ fish: fish._id, quantity: item.quantity, price: effectivePrice });
     }
     
-    const deliveryCharge = 50;
+    // Calculate delivery charge: ₹90 × exact weight in kg, minimum ₹90
+    const totalWeightKg = totalWeightGrams / 1000;
+    const deliveryCharge = totalWeightKg > 0 ? Math.max(90, Math.round(90 * totalWeightKg * 100) / 100) : 0;
     const total = subtotal + deliveryCharge;
     
     const order = new Order({
@@ -67,9 +82,14 @@ router.post('/', async (req, res) => {
     
     await order.save();
     
-    const pdfPath = await generatePDF(order);
-    order.pdfPath = pdfPath;
-    await order.save();
+    let pdfPath = null;
+    try {
+      pdfPath = await generatePDF(order);
+      order.pdfPath = pdfPath;
+      await order.save();
+    } catch (err) {
+      console.error('PDF generation failed, proceeding without PDF:', err.message);
+    }
     
     res.status(201).json({ order: await Order.findById(order._id).populate('items.fish'), pdfPath });
   } catch (error) {
@@ -82,7 +102,19 @@ router.post('/', async (req, res) => {
 router.put('/:id/status', async (req, res) => {
   try {
     const { status } = req.body;
-    const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true }).populate('items.fish');
+    const orderId = req.params.id;
+    
+    // Try to find by orderId field first (for custom IDs like ORD-xxx), then by _id
+    let order = await Order.findOneAndUpdate(
+      { orderId: orderId }, 
+      { status }, 
+      { new: true }
+    ).populate('items.fish');
+    
+    // If not found by orderId, try by _id (for MongoDB ObjectIds)
+    if (!order) {
+      order = await Order.findByIdAndUpdate(orderId, { status }, { new: true }).populate('items.fish');
+    }
     
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
@@ -92,6 +124,20 @@ router.put('/:id/status', async (req, res) => {
   } catch (error) {
     console.error('Error updating order status:', error);
     res.status(500).json({ message: 'Error updating order status' });
+  }
+});
+
+// DELETE /api/orders - Delete all orders (Admin only)
+router.delete('/', async (req, res) => {
+  try {
+    const result = await Order.deleteMany({});
+    res.json({ 
+      message: `Successfully deleted ${result.deletedCount} orders`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Error deleting all orders:', error);
+    res.status(500).json({ message: 'Error deleting all orders' });
   }
 });
 

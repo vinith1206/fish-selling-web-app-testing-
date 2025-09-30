@@ -3,6 +3,19 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { Fish, CartItem } from '@/types';
 
+const getEffectiveUnitPrice = (fish: Fish): number => {
+  const hasPercentDiscount = typeof fish.discount === 'number' && fish.discount > 0;
+  const hasOriginal = typeof (fish as any).originalPrice === 'number';
+  const discountPriceField = (fish as any).discountPrice as number | undefined;
+  if (typeof discountPriceField === 'number') return discountPriceField;
+  if (hasPercentDiscount && hasOriginal) {
+    const original = (fish as any).originalPrice as number;
+    const computed = original * (1 - (fish.discount as number) / 100);
+    return Number(computed.toFixed(2));
+  }
+  return fish.price;
+};
+
 interface CartState {
   items: CartItem[];
   total: number;
@@ -44,7 +57,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       
       return {
         items: updatedItems,
-        total: updatedItems.reduce((sum, item) => sum + (item.fish.price * item.quantity), 0),
+        total: updatedItems.reduce((sum, item) => sum + (getEffectiveUnitPrice(item.fish) * item.quantity), 0),
         itemCount: updatedItems.reduce((sum, item) => sum + item.quantity, 0),
       };
     }
@@ -53,7 +66,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       const updatedItems = state.items.filter(item => item.fish._id !== action.payload.fishId);
       return {
         items: updatedItems,
-        total: updatedItems.reduce((sum, item) => sum + (item.fish.price * item.quantity), 0),
+        total: updatedItems.reduce((sum, item) => sum + (getEffectiveUnitPrice(item.fish) * item.quantity), 0),
         itemCount: updatedItems.reduce((sum, item) => sum + item.quantity, 0),
       };
     }
@@ -68,7 +81,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       
       return {
         items: updatedItems,
-        total: updatedItems.reduce((sum, item) => sum + (item.fish.price * item.quantity), 0),
+        total: updatedItems.reduce((sum, item) => sum + (getEffectiveUnitPrice(item.fish) * item.quantity), 0),
         itemCount: updatedItems.reduce((sum, item) => sum + item.quantity, 0),
       };
     }
@@ -79,7 +92,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
     case 'LOAD_CART':
       return {
         items: action.payload,
-        total: action.payload.reduce((sum, item) => sum + (item.fish.price * item.quantity), 0),
+        total: action.payload.reduce((sum, item) => sum + (getEffectiveUnitPrice(item.fish) * item.quantity), 0),
         itemCount: action.payload.reduce((sum, item) => sum + item.quantity, 0),
       };
     

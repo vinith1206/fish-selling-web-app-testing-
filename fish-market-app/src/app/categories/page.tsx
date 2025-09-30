@@ -6,6 +6,7 @@ import { Fish } from '@/types';
 import FishCard from '@/components/FishCard';
 import AnimatedFish from '@/components/AnimatedFish';
 import { Filter, Search, Grid, List } from 'lucide-react';
+import { fishApi } from '@/lib/api';
 
 const getCategories = (fishes: Fish[]) => [
   { id: 'all', name: 'All Categories', count: fishes.length, icon: '🐠' },
@@ -31,13 +32,8 @@ export default function FishCategories() {
   useEffect(() => {
     const loadFishes = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/fishes`);
-        if (response.ok) {
-          const data = await response.json();
-          setFishes(data);
-        } else {
-          console.error('Failed to load fishes');
-        }
+        const response = await fishApi.getAll();
+        setFishes(response.data);
       } catch (error) {
         console.error('Error loading fishes:', error);
       }

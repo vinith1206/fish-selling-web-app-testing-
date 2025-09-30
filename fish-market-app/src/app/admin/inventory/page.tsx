@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { fishApi } from '@/lib/api';
 
 interface Fish {
   _id: string;
@@ -219,133 +220,8 @@ export default function InventoryPage() {
   const loadInventory = async () => {
     setIsLoading(true);
     try {
-      // Mock data - in production, fetch from API
-      const mockFishes: Fish[] = [
-        {
-          _id: '1',
-          name: 'Betta Fish - Half Moon',
-          price: 299,
-          originalPrice: 399,
-          category: 'betta',
-          availability: 'in_stock',
-          image: '/fish-images/betta-fish-half-moon.jpg',
-          stock: 15,
-          description: 'Beautiful half moon betta fish with vibrant colors',
-          weight: 0.1,
-          origin: 'Thailand',
-          discount: 25,
-          discountPrice: 299,
-          priceUnit: 'per_piece',
-          careLevel: 'beginner',
-          tankSize: '5-10 gallons',
-          waterTemp: '76-82°F',
-          waterPH: '6.5-7.5',
-          schooling: false,
-          groupSize: 1
-        },
-        {
-          _id: '2',
-          name: 'Guppy - Mixed Colors',
-          price: 49,
-          category: 'community',
-          availability: 'in_stock',
-          image: '/fish-images/guppy-mixed-colors.jpg',
-          stock: 50,
-          description: 'Colorful guppy fish, perfect for community tanks',
-          weight: 0.05,
-          origin: 'South America',
-          priceUnit: 'per_piece',
-          careLevel: 'beginner',
-          tankSize: '10+ gallons',
-          waterTemp: '72-82°F',
-          waterPH: '7.0-8.5',
-          schooling: true,
-          groupSize: 6
-        },
-        {
-          _id: '3',
-          name: 'Arowana - Silver',
-          price: 12999,
-          category: 'monster',
-          availability: 'sold_out',
-          image: '/fish-images/arowana-silver.jpg',
-          stock: 0,
-          description: 'Premium silver arowana, requires large tank',
-          weight: 2.5,
-          origin: 'Southeast Asia',
-          priceUnit: 'per_piece',
-          careLevel: 'expert',
-          tankSize: '200+ gallons',
-          waterTemp: '75-82°F',
-          waterPH: '6.0-7.0',
-          schooling: false,
-          groupSize: 1
-        },
-        {
-          _id: '4',
-          name: 'Glow Tetra',
-          price: 199,
-          category: 'glow',
-          availability: 'in_stock',
-          image: '/fish-images/glow-tetra.jpg',
-          stock: 25,
-          description: 'Genetically modified fluorescent tetra fish',
-          weight: 0.02,
-          origin: 'Lab bred',
-          priceUnit: 'per_piece',
-          careLevel: 'intermediate',
-          tankSize: '20+ gallons',
-          waterTemp: '72-78°F',
-          waterPH: '6.0-7.5',
-          schooling: true,
-          groupSize: 8
-        },
-        {
-          _id: '5',
-          name: 'Red Cherry Shrimp',
-          price: 39,
-          category: 'shrimp',
-          availability: 'in_stock',
-          image: '/fish-images/red-cherry-shrimp.jpg',
-          stock: 100,
-          description: 'Hardy red cherry shrimp, great for cleaning',
-          weight: 0.01,
-          origin: 'Taiwan',
-          priceUnit: 'per_piece',
-          careLevel: 'beginner',
-          tankSize: '5+ gallons',
-          waterTemp: '65-80°F',
-          waterPH: '6.5-8.0',
-          schooling: true,
-          groupSize: 10
-        },
-        {
-          _id: '6',
-          name: 'Java Moss',
-          price: 99,
-          category: 'plants',
-          availability: 'in_stock',
-          image: '/fish-images/java-moss.jpg',
-          stock: 30,
-          description: 'Easy to grow moss for aquascaping',
-          weight: 0.1,
-          origin: 'Southeast Asia',
-          priceUnit: 'per_piece',
-          careLevel: 'beginner',
-          tankSize: 'Any size',
-          waterTemp: '70-75°F',
-          waterPH: '6.0-7.5'
-        }
-      ];
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/fishes`);
-      if (response.ok) {
-        const data = await response.json();
-        setFishes(data);
-      } else {
-        console.error('Failed to load inventory');
-        setFishes([]);
-      }
+      const response = await fishApi.getAll();
+      setFishes(response.data);
     } catch (error) {
       console.error('Error loading inventory:', error);
       setFishes([]);
@@ -383,34 +259,14 @@ export default function InventoryPage() {
     try {
       if (editingFish) {
         // Update existing fish
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/fishes/${editingFish._id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData),
-        });
-        
-        if (response.ok) {
-          const updatedFish = await response.json();
-          setFishes(prev => prev.map(fish => 
-            fish._id === editingFish._id ? updatedFish : fish
-          ));
-        }
+        const response = await fishApi.update(editingFish._id, formData);
+        setFishes(prev => prev.map(fish => 
+          fish._id === editingFish._id ? response.data : fish
+        ));
       } else {
         // Add new fish
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/fishes`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData),
-        });
-        
-        if (response.ok) {
-          const newFish = await response.json();
-          setFishes(prev => [...prev, newFish]);
-        }
+        const response = await fishApi.create(formData);
+        setFishes(prev => [...prev, response.data]);
       }
       
       resetForm();
@@ -498,13 +354,8 @@ export default function InventoryPage() {
   const handleDelete = async (fishId: string) => {
     if (confirm('Are you sure you want to delete this fish?')) {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/fishes/${fishId}`, {
-          method: 'DELETE',
-        });
-        
-        if (response.ok) {
-          setFishes(prev => prev.filter(fish => fish._id !== fishId));
-        }
+        await fishApi.delete(fishId);
+        setFishes(prev => prev.filter(fish => fish._id !== fishId));
       } catch (error) {
         console.error('Error deleting fish:', error);
       }
@@ -695,16 +546,16 @@ export default function InventoryPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Weight (kg)
+                        Weight (grams)
                       </label>
                       <input
                         type="number"
-                        step="0.1"
+                        step="1"
                         name="weight"
                         value={formData.weight}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1E90FF] focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        placeholder="Enter weight in kg"
+                        placeholder="Enter weight in grams"
                       />
                     </div>
 
@@ -999,7 +850,7 @@ export default function InventoryPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Weight:</span>
-                    <span className="font-semibold">{fish.weight} kg</span>
+                    <span className="font-semibold">{fish.weight ? fish.weight.toFixed(0) : 'N/A'} g</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Origin:</span>

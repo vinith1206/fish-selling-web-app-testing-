@@ -15,9 +15,7 @@ const Header = () => {
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'Categories', href: '/categories' },
-    { name: 'Pincode Check', href: '/pincode-check' },
     { name: 'Cart', href: '/cart' },
-    { name: 'Tank Calculator', href: '/tank-calculator' },
     { name: 'Admin', href: '/admin/login' },
   ];
 

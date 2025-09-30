@@ -9,6 +9,20 @@ import Link from 'next/link';
 import PincodeInput from '@/components/PincodeInput';
 import { HybridPincodeData } from '@/services/hybridPincodeService';
 
+// Import the pricing function from CartContext
+const getEffectiveUnitPrice = (fish: any): number => {
+  const hasPercentDiscount = typeof fish.discount === 'number' && fish.discount > 0;
+  const hasOriginal = typeof fish.originalPrice === 'number';
+  const discountPriceField = fish.discountPrice as number | undefined;
+  if (typeof discountPriceField === 'number') return discountPriceField;
+  if (hasPercentDiscount && hasOriginal) {
+    const original = fish.originalPrice as number;
+    const computed = original * (1 - (fish.discount as number) / 100);
+    return Number(computed.toFixed(2));
+  }
+  return fish.price;
+};
+
 export default function CheckoutPage() {
   const { state, clearCart } = useCart();
   const router = useRouter();
@@ -27,38 +41,17 @@ export default function CheckoutPage() {
     email: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [selectedShipping, setSelectedShipping] = useState<string>('standard');
   const [pincodeData, setPincodeData] = useState<HybridPincodeData | null>(null);
-  const [shippingRates, setShippingRates] = useState([
-    {
-      id: 'standard',
-      name: 'Standard Delivery',
-      price: 50,
-      deliveryTime: '3-5 business days',
-      icon: 'truck'
-    },
-    {
-      id: 'express',
-      name: 'Express Delivery',
-      price: 100,
-      deliveryTime: '1-2 business days',
-      icon: 'clock'
-    },
-    {
-      id: 'same_day',
-      name: 'Same Day Delivery',
-      price: 200,
-      deliveryTime: 'Same day (within 6 hours)',
-      icon: 'map'
-    }
-  ]);
 
-  const selectedShippingRate = shippingRates.find(rate => rate.id === selectedShipping) || shippingRates[0];
-  
-  const deliveryCharge = pincodeData?.isServiceable 
-    ? (pincodeData.shippingCost || selectedShippingRate.price)
-    : selectedShippingRate.price;
-  
+  // Total weight in grams and kg
+  const totalWeightGrams = state.items.reduce((sum, item) => {
+    const perUnitWeight = item.fish.weight || 0; // grams per unit
+    return sum + perUnitWeight * item.quantity;
+  }, 0);
+  const totalWeightKg = totalWeightGrams / 1000;
+
+  // Delivery charge: ₹90 × exact weight in kg, minimum ₹90
+  const deliveryCharge = totalWeightKg > 0 ? Math.max(90, Math.round(90 * totalWeightKg * 100) / 100) : 0;
   const total = state.total + deliveryCharge;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -102,9 +95,43 @@ export default function CheckoutPage() {
     try {
       await new Promise(resolve => setTimeout(resolve, 2000));
       const orderId = `ORD-${Date.now()}`;
-      clearCart();
-      const orderData = {
-        orderId,
+
+      // Persist order to backend API expected schema
+      const backendPayload = {
+        customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+        customerPhone: formData.phone,
+        customerAddress: [
+          formData.streetAddress1,
+          formData.streetAddress2,
+          formData.city,
+          formData.state,
+          formData.zipcode,
+        ].filter(Boolean).join(', '),
+        items: state.items.map(item => ({
+          fish: { _id: item.fish._id },
+          quantity: item.quantity,
+        })),
+        // Backend calculates price from DB; we still send for our own confirmation page
+      } as any;
+
+      const apiBase = 'http://localhost:5001';
+      const ordersUrl = `${apiBase}/api/orders`;
+      const resp = await fetch(ordersUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(backendPayload),
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => '');
+        throw new Error(`Order API failed (${resp.status}) at ${ordersUrl}: ${text}`);
+      }
+
+      const { order } = await resp.json();
+
+      // Prepare data for confirmation page
+      const confirmationData = {
+        orderId: order.orderId || order._id || orderId,
         billingDetails: {
           firstName: formData.firstName,
           lastName: formData.lastName,
@@ -118,20 +145,25 @@ export default function CheckoutPage() {
           phone: formData.phone,
           email: formData.email,
         },
-        items: state.items.map(item => ({
-          name: item.fish.name,
-          quantity: item.quantity,
-          price: item.fish.price,
-          total: item.fish.price * item.quantity
-        })),
+        items: state.items.map(item => {
+          const effectivePrice = getEffectiveUnitPrice(item.fish);
+          return {
+            name: item.fish.name,
+            quantity: item.quantity,
+            price: effectivePrice,
+            total: effectivePrice * item.quantity,
+          };
+        }),
         subtotal: state.total,
-        shippingMethod: selectedShippingRate.name,
+        shippingMethod: 'Weight-based',
         deliveryCharge: deliveryCharge,
         total: total,
         orderTime: new Date().toLocaleString(),
       };
-      sessionStorage.setItem('orderData', JSON.stringify(orderData));
-      router.push(`/confirmation?orderId=${orderId}`);
+
+      clearCart();
+      sessionStorage.setItem('orderData', JSON.stringify(confirmationData));
+      router.push(`/confirmation?orderId=${confirmationData.orderId}`);
     } catch (error) {
       console.error('Error placing order:', error);
       alert('Failed to place order. Please try again.');
@@ -391,48 +423,6 @@ export default function CheckoutPage() {
                 )}
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  <Truck className="h-4 w-4 inline mr-2" />
-                  Shipping Method
-                </label>
-                <div className="space-y-3">
-                  {shippingRates.map((rate) => (
-                    <div
-                      key={rate.id}
-                      onClick={() => setSelectedShipping(rate.id)}
-                      className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
-                        selectedShipping === rate.id
-                          ? 'border-[#1E90FF] bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className={`p-2 rounded-lg ${
-                            selectedShipping === rate.id ? 'bg-[#1E90FF] text-white' : 'bg-gray-100 text-gray-600'
-                          }`}>
-                            {rate.icon === 'truck' && <Truck className="h-5 w-5" />}
-                            {rate.icon === 'clock' && <Clock className="h-5 w-5" />}
-                            {rate.icon === 'map' && <MapPin className="h-5 w-5" />}
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{rate.name}</h3>
-                            <p className="text-sm text-gray-600">{rate.deliveryTime}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-[#1E90FF]">₹{rate.price}</div>
-                          {rate.id === 'same_day' && (
-                            <div className="text-xs text-red-600">Limited availability</div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -474,18 +464,39 @@ export default function CheckoutPage() {
                       {item.fish.name}
                     </h3>
                     <p className="text-xs text-gray-500">
-                      {item.quantity} × ₹{item.fish.price}
+                      {item.quantity} × ₹{(typeof (item.fish as any).discountPrice === 'number'
+                        ? (item.fish as any).discountPrice
+                        : (typeof item.fish.discount === 'number' && item.fish.discount > 0 && typeof (item.fish as any).originalPrice === 'number')
+                          ? Number(((item.fish as any).originalPrice * (1 - (item.fish.discount as number) / 100)).toFixed(2))
+                          : item.fish.price)}
+                      {typeof item.fish.discount === 'number' && item.fish.discount > 0 && (
+                        <span className="ml-2 text-[10px] text-red-500 line-through">₹{(item.fish as any).originalPrice || item.fish.price}</span>
+                      )}
                     </p>
                   </div>
                   
                   <div className="text-sm font-bold text-gray-900">
-                    ₹{(item.fish.price * item.quantity).toFixed(2)}
+                    {(() => {
+                      const dp = (item.fish as any).discountPrice as number | undefined;
+                      const hasPct = typeof item.fish.discount === 'number' && item.fish.discount > 0;
+                      const hasOrig = typeof (item.fish as any).originalPrice === 'number';
+                      const unit = typeof dp === 'number' ? dp : hasPct && hasOrig
+                        ? Number(((item.fish as any).originalPrice * (1 - (item.fish.discount as number) / 100)).toFixed(2))
+                        : item.fish.price;
+                      return `₹${(unit * item.quantity).toFixed(2)}`;
+                    })()}
                   </div>
                 </div>
               ))}
             </div>
             
             <div className="border-t border-gray-200 pt-4 space-y-3">
+              {totalWeightGrams > 0 && (
+                <div className="flex justify-between text-gray-600">
+                  <span>Total Weight</span>
+                  <span>{totalWeightGrams.toFixed(0)} g ({totalWeightKg.toFixed(2)} kg)</span>
+                </div>
+              )}
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal ({state.itemCount} items)</span>
                 <span>₹{state.total.toFixed(2)}</span>
@@ -494,12 +505,7 @@ export default function CheckoutPage() {
               <div className="flex justify-between text-gray-600">
                 <div>
                   <span>Delivery Charge</span>
-                  <div className="text-xs text-gray-500">
-                    {pincodeData?.isServiceable 
-                      ? `${pincodeData.city}, ${pincodeData.state} - ${selectedShippingRate.name}`
-                      : selectedShippingRate.name
-                    }
-                  </div>
+                  <div className="text-xs text-gray-500">₹90 × {totalWeightKg.toFixed(2)} kg (minimum ₹90)</div>
                 </div>
                 <span>₹{deliveryCharge.toFixed(2)}</span>
               </div>

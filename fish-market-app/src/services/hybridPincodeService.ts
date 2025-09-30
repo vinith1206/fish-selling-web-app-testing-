@@ -54,6 +54,11 @@ export const getHybridPincodeData = async (pincode: string): Promise<HybridPinco
     const localResult = localData.status === 'fulfilled' ? localData.value : null;
     const apiResult = apiData.status === 'fulfilled' ? apiData.value : null;
 
+    // If API fails, just use local data
+    if (apiData.status === 'rejected') {
+      console.warn('API pincode validation failed, using local data only:', apiData.reason?.message);
+    }
+
     if (!localResult && !apiResult) return null;
     return mergePincodeData(localResult, apiResult);
   } catch (error) {

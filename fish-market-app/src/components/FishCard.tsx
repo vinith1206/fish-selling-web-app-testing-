@@ -5,6 +5,7 @@ import { Plus, Minus, GitCompare } from 'lucide-react';
 import { Fish } from '@/types';
 import { useCart } from '@/contexts/CartContext';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getFishImagePath, getFishImageAlt } from '@/lib/fishImageUtils';
 
 interface FishCardProps {
@@ -14,6 +15,7 @@ interface FishCardProps {
 
 const FishCard = ({ fish, index }: FishCardProps) => {
   const { addToCart, state, updateQuantity } = useCart();
+  const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
 
   const cartItem = state.items.find(item => item.fish._id === fish._id);
@@ -22,7 +24,11 @@ const FishCard = ({ fish, index }: FishCardProps) => {
   const handleAddToCart = async () => {
     setIsAdding(true);
     try {
-      addToCart(fish, 1);
+      if (quantity >= (fish.stock || 0)) {
+        console.warn('Cannot add more than stock available');
+      } else {
+        addToCart(fish, 1);
+      }
     } catch (error) {
       console.error('Error adding to cart:', error);
     }
@@ -32,14 +38,31 @@ const FishCard = ({ fish, index }: FishCardProps) => {
   };
 
   const handleQuantityChange = (newQuantity: number) => {
-    if (newQuantity === 0) {
+    const clamped = Math.max(0, Math.min(newQuantity, fish.stock || 0));
+    if (clamped === 0) {
       updateQuantity(fish._id, 0);
     } else {
-      updateQuantity(fish._id, newQuantity);
+      updateQuantity(fish._id, clamped);
     }
   };
 
   const isInStock = fish.availability === 'in_stock';
+
+  const handleCompare = () => {
+    try {
+      const key = 'compareFishes';
+      const existingRaw = typeof window !== 'undefined' ? window.localStorage.getItem(key) : null;
+      const existing: Fish[] = existingRaw ? JSON.parse(existingRaw) : [];
+      const already = existing.some((f) => f._id === fish._id);
+      const updated = already ? existing : [...existing, fish];
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(key, JSON.stringify(updated));
+      }
+      router.push('/compare');
+    } catch (e) {
+      console.error('Compare action failed', e);
+    }
+  };
 
   return (
     <div 
@@ -54,17 +77,18 @@ const FishCard = ({ fish, index }: FishCardProps) => {
     >
       <div className="relative h-64 w-full overflow-hidden">
         <Image
-          src={getFishImagePath(fish.name)}
+          src={fish.image}
           alt={getFishImageAlt(fish.name)}
           fill
           className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           priority={index < 4}
           onError={(e) => {
-            // Fallback to original image if local image fails to load
+            // Fallback to constructed image path if database image fails to load
             const target = e.target as HTMLImageElement;
-            if (target.src !== fish.image) {
-              target.src = fish.image;
+            const fallbackPath = getFishImagePath(fish.name);
+            if (target.src !== fallbackPath) {
+              target.src = fallbackPath;
             }
           }}
         />
@@ -164,19 +188,42 @@ const FishCard = ({ fish, index }: FishCardProps) => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <div className="flex items-center space-x-2">
-              {fish.discount > 0 ? (
-                <>
-                  <span className="text-3xl font-bold text-[#1E90FF]">₹{fish.discountPrice || fish.price}</span>
-                  <span className="text-lg text-gray-400 line-through">₹{fish.originalPrice || fish.price}</span>
-                </>
-              ) : (
-              <span className="text-3xl font-bold text-[#1E90FF]">₹{fish.price}</span>
-              )}
+              {(() => {
+                const rawOriginal = (fish as any).originalPrice;
+                const original = typeof rawOriginal === 'number' && rawOriginal > 0 ? rawOriginal : fish.price;
+                const dp = (fish as any).discountPrice;
+                const hasPct = typeof fish.discount === 'number' && fish.discount > 0;
+                const pctPrice = hasPct ? Number((original * (1 - (fish.discount as number) / 100)).toFixed(2)) : undefined;
+                const discounted = typeof dp === 'number' && dp > 0 ? dp : pctPrice;
+
+                if (typeof discounted === 'number' && discounted > 0 && discounted < original) {
+                  return (
+                    <>
+                      <span className="text-3xl font-bold text-[#1E90FF]">₹{discounted}</span>
+                      <span className="text-lg text-gray-400 line-through">₹{original}</span>
+                    </>
+                  );
+                }
+                return <span className="text-3xl font-bold text-[#1E90FF]">₹{original}</span>;
+              })()}
             </div>
-            <span className="text-gray-500 text-sm font-medium">/{fish.priceUnit === 'per_kg' ? 'kg' : 'piece'}</span>
-            {fish.discount > 0 && (
+        {fish.priceUnit === 'per_kg' && (
+          <span className="text-gray-500 text-sm font-medium">/kg</span>
+        )}
+            {fish.discount && fish.discount > 0 && (
               <div className="text-green-600 text-sm font-semibold">
-                Save ₹{fish.originalPrice ? fish.originalPrice - (fish.discountPrice || fish.price) : Math.round(fish.price * fish.discount / 100)}
+                {(() => {
+                  const rawOriginal = (fish as any).originalPrice;
+                  const original = typeof rawOriginal === 'number' && rawOriginal > 0 ? rawOriginal : fish.price;
+                  const dp = (fish as any).discountPrice;
+                  const hasPct = typeof fish.discount === 'number' && fish.discount > 0;
+                  const effective = typeof dp === 'number' && dp > 0 ? dp : hasPct ? Number((original * (1 - (fish.discount as number) / 100)).toFixed(2)) : original;
+                  const savings = Math.max(0, original - effective);
+                  if (savings > 0) {
+                    return `Save ₹${savings.toFixed(0)}`;
+                  }
+                  return `Save ${fish.discount}%`;
+                })()}
               </div>
             )}
           </div>
@@ -184,23 +231,34 @@ const FishCard = ({ fish, index }: FishCardProps) => {
         <div className="space-y-3">
           {isInStock ? (
             quantity > 0 ? (
-              <div className="flex items-center justify-between bg-gray-50 rounded-xl p-2">
-                <button onClick={() => handleQuantityChange(quantity - 1)} className="p-2 text-gray-600 hover:text-[#1E90FF] hover:bg-white rounded-lg transition-all duration-200">
-                  <Minus className="h-4 w-4" />
-                </button>
-                <span className="text-lg font-bold text-gray-900 px-4">{quantity}</span>
-                <button onClick={() => handleQuantityChange(quantity + 1)} className="p-2 text-gray-600 hover:text-[#1E90FF] hover:bg-white rounded-lg transition-all duration-200">
-                  <Plus className="h-4 w-4" />
-                </button>
+              <div className="flex flex-col items-center bg-gray-50 rounded-xl p-2">
+                <div className="flex items-center justify-between w-full">
+                  <button onClick={() => handleQuantityChange(quantity - 1)} className="p-2 text-gray-600 hover:text-[#1E90FF] hover:bg-white rounded-lg transition-all duration-200">
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="text-lg font-bold text-gray-900 px-4">{quantity}</span>
+                  <button
+                    onClick={() => handleQuantityChange(quantity + 1)}
+                    disabled={quantity >= (fish.stock || 0)}
+                    className={`p-2 rounded-lg transition-all duration-200 ${quantity >= (fish.stock || 0) ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-[#1E90FF] hover:bg-white'}`}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+                {fish.stock !== undefined && (
+                  <div className="text-xs text-gray-500 mt-1 text-center">
+                    {quantity >= fish.stock ? 'Max stock reached' : `In stock: ${fish.stock}`}
+                  </div>
+                )}
               </div>
             ) : (
               <button
                 onClick={handleAddToCart}
-                disabled={isAdding}
-                className={`w-full bg-gradient-to-r from-[#1E90FF] to-[#0EA5E9] text-white py-3 px-4 rounded-xl hover:from-[#0EA5E9] hover:to-[#06B6D4] transition-all duration-300 flex items-center justify-center space-x-2 font-bold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${isAdding ? 'opacity-75 cursor-not-allowed' : ''}`}
+                disabled={isAdding || (fish.stock || 0) === 0}
+                className={`w-full bg-gradient-to-r from-[#1E90FF] to-[#0EA5E9] text-white py-3 px-4 rounded-xl hover:from-[#0EA5E9] hover:to-[#06B6D4] transition-all duration-300 flex items-center justify-center space-x-2 font-bold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${isAdding || (fish.stock || 0) === 0 ? 'opacity-75 cursor-not-allowed' : ''}`}
               >
                 <Plus className="h-5 w-5" />
-                <span>{isAdding ? 'Adding...' : 'Add to Cart'}</span>
+                <span>{isAdding ? 'Adding...' : (fish.stock || 0) === 0 ? 'Out of Stock' : 'Add to Cart'}</span>
               </button>
             )
           ) : (
@@ -208,7 +266,7 @@ const FishCard = ({ fish, index }: FishCardProps) => {
           )}
           
           {/* Compare Button */}
-          <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2 font-medium">
+          <button onClick={handleCompare} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2 font-medium">
             <GitCompare className="h-4 w-4" />
             <span>Compare</span>
           </button>

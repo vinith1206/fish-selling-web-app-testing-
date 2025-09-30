@@ -10,7 +10,15 @@ export default function CartPage() {
   const { state, updateQuantity, removeFromCart, clearCart } = useCart();
   const router = useRouter();
 
-  const deliveryCharge = 50; // Fixed delivery charge
+  // Total weight in grams for all items
+  const totalWeightGrams = state.items.reduce((sum, item) => {
+    const perUnitWeight = item.fish.weight || 0; // grams per unit
+    return sum + perUnitWeight * item.quantity;
+  }, 0);
+  const totalWeightKg = totalWeightGrams / 1000;
+
+  // Delivery charge: ₹90 × exact weight in kg, minimum ₹90
+  const deliveryCharge = totalWeightKg > 0 ? Math.max(90, Math.round(90 * totalWeightKg * 100) / 100) : 0;
   const total = state.total + deliveryCharge;
 
 
@@ -95,9 +103,31 @@ export default function CartPage() {
                         <p className="text-sm text-gray-500">
                           {item.fish.priceUnit === 'per_kg' ? 'per kg' : 'per piece'}
                         </p>
-                        <p className="text-lg font-bold text-[#1E90FF]">
-                          ₹{item.fish.price}
-                        </p>
+                        <div className="flex items-center space-x-2">
+                          {(() => {
+                            const rawOriginal = (item.fish as any).originalPrice;
+                            const original = typeof rawOriginal === 'number' && rawOriginal > 0 ? rawOriginal : item.fish.price;
+                            const dp = (item.fish as any).discountPrice;
+                            const hasPct = typeof item.fish.discount === 'number' && item.fish.discount > 0;
+                            const pctPrice = hasPct ? Number((original * (1 - (item.fish.discount as number) / 100)).toFixed(2)) : undefined;
+                            const discounted = typeof dp === 'number' && dp > 0 ? dp : pctPrice;
+
+                            if (typeof discounted === 'number' && discounted > 0 && discounted < original) {
+                              return (
+                                <>
+                                  <span className="text-lg font-bold text-[#1E90FF]">₹{discounted}</span>
+                                  <span className="text-sm text-gray-400 line-through">₹{original}</span>
+                                </>
+                              );
+                            }
+                            return <span className="text-lg font-bold text-[#1E90FF]">₹{original}</span>;
+                          })()}
+                        </div>
+                        {typeof item.fish.weight === 'number' && item.fish.weight > 0 && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            Weight: {(item.fish.weight * item.quantity).toFixed(0)} g
+                          </p>
+                        )}
                       </div>
                       
                       {/* Quantity Controls */}
@@ -124,7 +154,16 @@ export default function CartPage() {
                       {/* Item Total */}
                       <div className="text-right">
                         <p className="text-lg font-bold text-gray-900">
-                          ₹{(item.fish.price * item.quantity).toFixed(2)}
+                          {(() => {
+                            const rawOriginal = (item.fish as any).originalPrice;
+                            const original = typeof rawOriginal === 'number' && rawOriginal > 0 ? rawOriginal : item.fish.price;
+                            const dp = (item.fish as any).discountPrice;
+                            const hasPct = typeof item.fish.discount === 'number' && item.fish.discount > 0;
+                            const pctPrice = hasPct ? Number((original * (1 - (item.fish.discount as number) / 100)).toFixed(2)) : undefined;
+                            const discounted = typeof dp === 'number' && dp > 0 ? dp : pctPrice;
+                            const effectivePrice = typeof discounted === 'number' && discounted > 0 && discounted < original ? discounted : original;
+                            return `₹${(effectivePrice * item.quantity).toFixed(2)}`;
+                          })()}
                         </p>
                         <button
                           onClick={() => removeFromCart(item.fish._id)}
@@ -150,6 +189,13 @@ export default function CartPage() {
                   <span>Subtotal ({state.itemCount} items)</span>
                   <span>₹{state.total.toFixed(2)}</span>
                 </div>
+
+                {totalWeightGrams > 0 && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>Total Weight</span>
+                    <span>{totalWeightGrams.toFixed(0)} g ({totalWeightKg.toFixed(2)} kg)</span>
+                  </div>
+                )}
                 
                 <div className="flex justify-between text-gray-600">
                   <span>Delivery Charge</span>

@@ -64,11 +64,8 @@ export default function OrdersPage() {
     loadOrders();
   }, []);
 
-  // Save orders to localStorage whenever orders change (but not on initial load)
+  // No longer using localStorage - orders are fetched from API
   useEffect(() => {
-    if (!isInitialLoad.current && orders.length > 0) {
-      localStorage.setItem('adminOrders', JSON.stringify(orders));
-    }
     if (isInitialLoad.current) {
       isInitialLoad.current = false;
     }
@@ -96,95 +93,84 @@ export default function OrdersPage() {
   const loadOrders = async () => {
     setIsLoading(true);
     try {
-      // Check if we have saved orders in localStorage
-      const savedOrders = localStorage.getItem('adminOrders');
+      // Fetch real orders from the API
+      const response = await fetch('http://localhost:5001/api/orders');
       
-      if (savedOrders) {
-        // Load saved orders
-        const parsedOrders = JSON.parse(savedOrders);
-        console.log('Loading saved orders from localStorage:', parsedOrders.length, 'orders');
-        setOrders(parsedOrders);
+      if (response.ok) {
+        const realOrders = await response.json();
+        console.log('Loading real orders from API:', realOrders.length, 'orders');
+        
+        // Transform API data to match the expected format
+        const transformedOrders: Order[] = realOrders.map((order: any) => ({
+          id: order.orderId || order._id,
+          customerName: order.customerName || 'N/A',
+          customerPhone: order.customerPhone || 'N/A',
+          customerAddress: order.customerAddress || 'N/A',
+          total: order.total || 0,
+          subtotal: order.subtotal || 0,
+          deliveryCharge: order.deliveryCharge || 0,
+          status: order.status || 'pending',
+          createdAt: order.createdAt || new Date().toISOString(),
+          items: order.items?.map((item: any) => ({
+            name: item.fish?.name || 'Unknown Fish',
+            quantity: item.quantity || 0,
+            price: item.price || 0,
+            total: (item.quantity || 0) * (item.price || 0)
+          })) || []
+        }));
+        
+        setOrders(transformedOrders);
       } else {
-        // Load mock data only if no saved data exists
-        const mockOrders: Order[] = [
-          {
-            id: 'ORD-001',
-            customerName: 'John Doe',
-            customerPhone: '+1 234-567-8900',
-            customerAddress: '123 Main Street, City, State 12345',
-            total: 2547,
-            subtotal: 2497,
-            deliveryCharge: 50,
-            status: 'confirmed',
-            createdAt: '2024-01-15T10:30:00Z',
-            items: [
-              { name: 'Fresh Salmon', quantity: 2, price: 899, total: 1798 },
-              { name: 'Red Snapper', quantity: 1, price: 699, total: 699 }
-            ]
-          },
-          {
-            id: 'ORD-002',
-            customerName: 'Jane Smith',
-            customerPhone: '+1 234-567-8901',
-            customerAddress: '456 Oak Avenue, City, State 12346',
-            total: 1899,
-            subtotal: 1849,
-            deliveryCharge: 50,
-            status: 'delivered',
-            createdAt: '2024-01-15T09:15:00Z',
-            items: [
-              { name: 'Tuna Steak', quantity: 1, price: 1299, total: 1299 },
-              { name: 'Prawns', quantity: 1, price: 599, total: 599 }
-            ]
-          },
-          {
-            id: 'ORD-003',
-            customerName: 'Mike Johnson',
-            customerPhone: '+1 234-567-8902',
-            customerAddress: '789 Pine Road, City, State 12347',
-            total: 1249,
-            subtotal: 1199,
-            deliveryCharge: 50,
-            status: 'preparing',
-            createdAt: '2024-01-15T11:45:00Z',
-            items: [
-              { name: 'Sea Bass', quantity: 1, price: 799, total: 799 },
-              { name: 'Crab', quantity: 1, price: 999, total: 999 }
-            ]
-          },
-          {
-            id: 'ORD-004',
-            customerName: 'Sarah Wilson',
-            customerPhone: '+1 234-567-8903',
-            customerAddress: '321 Elm Street, City, State 12348',
-            total: 3298,
-            subtotal: 3248,
-            deliveryCharge: 50,
-            status: 'pending',
-            createdAt: '2024-01-15T12:20:00Z',
-            items: [
-              { name: 'Fresh Salmon', quantity: 3, price: 899, total: 2697 },
-              { name: 'Red Snapper', quantity: 1, price: 699, total: 699 }
-            ]
-          }
-        ];
-
-        setOrders(mockOrders);
+        console.error('Failed to fetch orders from API:', response.status);
+        setOrders([]);
       }
     } catch (error) {
-      console.error('Error loading orders:', error);
+      console.error('Error loading orders from API:', error);
+      // Fallback to mock data if API fails
+      loadMockOrders();
     } finally {
       setIsLoading(false);
     }
   };
 
-  const updateOrderStatus = (orderId: string, newStatus: Order['status']) => {
-    const updatedOrders = orders.map(order => 
-      order.id === orderId ? { ...order, status: newStatus } : order
-    );
-    setOrders(updatedOrders);
-    // Immediately save to localStorage
-    localStorage.setItem('adminOrders', JSON.stringify(updatedOrders));
+  const loadMockOrders = () => {
+    setOrders([]);
+  };
+
+  const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
+    try {
+      // Update status via API
+      const response = await fetch(`http://localhost:5001/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        // Update local state
+        const updatedOrders = orders.map(order => 
+          order.id === orderId ? { ...order, status: newStatus } : order
+        );
+        setOrders(updatedOrders);
+        console.log(`Order ${orderId} status updated to ${newStatus}`);
+      } else {
+        console.error('Failed to update order status:', response.status);
+        // Still update local state for immediate UI feedback
+        const updatedOrders = orders.map(order => 
+          order.id === orderId ? { ...order, status: newStatus } : order
+        );
+        setOrders(updatedOrders);
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      // Still update local state for immediate UI feedback
+      const updatedOrders = orders.map(order => 
+        order.id === orderId ? { ...order, status: newStatus } : order
+      );
+      setOrders(updatedOrders);
+    }
   };
 
   const handleCancelOrder = (order: Order) => {
@@ -199,12 +185,7 @@ export default function OrdersPage() {
 
   const confirmCancelOrder = () => {
     if (orderToAction) {
-      const updatedOrders = orders.map(order => 
-        order.id === orderToAction.id ? { ...order, status: 'cancelled' as const } : order
-      );
-      setOrders(updatedOrders);
-      // Immediately save to localStorage
-      localStorage.setItem('adminOrders', JSON.stringify(updatedOrders));
+      updateOrderStatus(orderToAction.id, 'cancelled');
       setShowCancelModal(false);
       setOrderToAction(null);
     }
@@ -215,18 +196,38 @@ export default function OrdersPage() {
       const updatedOrders = orders.filter(order => order.id !== orderToAction.id);
       console.log('Deleting order:', orderToAction.id, 'Remaining orders:', updatedOrders.length);
       setOrders(updatedOrders);
-      // Immediately save to localStorage
-      localStorage.setItem('adminOrders', JSON.stringify(updatedOrders));
-      console.log('Saved to localStorage:', updatedOrders.length, 'orders');
       setShowDeleteModal(false);
       setOrderToAction(null);
     }
   };
 
-  const resetOrders = () => {
-    if (confirm('Are you sure you want to reset all orders to the original mock data? This will delete all current orders and restore the default ones.')) {
-      localStorage.removeItem('adminOrders');
-      loadOrders();
+  const resetOrders = async () => {
+    if (confirm('Are you sure you want to delete ALL orders? This action cannot be undone!')) {
+      try {
+        setIsLoading(true);
+        const response = await fetch('http://localhost:5001/api/orders', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Reset orders result:', result);
+          setOrders([]);
+          setFilteredOrders([]);
+          alert(`Successfully deleted ${result.deletedCount} orders`);
+        } else {
+          console.error('Failed to reset orders:', response.status);
+          alert('Failed to reset orders. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error resetting orders:', error);
+        alert('Error resetting orders. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -402,9 +403,9 @@ export default function OrdersPage() {
               <button
                 onClick={resetOrders}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
-                title="Reset to default orders"
+                title="Delete all orders permanently"
               >
-                Reset Orders
+                Clear All Orders
               </button>
             </div>
           </div>

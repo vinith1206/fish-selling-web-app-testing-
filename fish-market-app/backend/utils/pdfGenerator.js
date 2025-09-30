@@ -67,7 +67,8 @@ async function generatePDF(order) {
     page.drawLine({ start: { x: 350, y: yPos }, end: { x: width - 50, y: yPos }, thickness: 2, color: blue });
     yPos -= 20;
     page.drawText('Total:', { x: 350, y: yPos, size: 14, font: boldFont, color: darkGray });
-    page.drawText(`₹${order.total}`, { x: 450, y: yPos, size: 14, font: boldFont, color: green });
+    // Use ASCII-friendly currency label to avoid encoding issues with standard fonts
+    page.drawText(`Rs ${order.total}`, { x: 450, y: yPos, size: 14, font: boldFont, color: green });
 
     // Footer
     yPos -= 60;

@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { Fish, Order } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+// Normalize API base to always include /api
+const frontendBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const API_BASE_URL = frontendBase.endsWith('/api') ? frontendBase : `${frontendBase}/api`;
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -12,8 +14,16 @@ export const api = axios.create({
 
 // Fish API
 export const fishApi = {
-  getAll: () => api.get<Fish[]>('/fishes'),
+  getAll: () => {
+    console.log('fishApi.getAll called, API_BASE_URL:', API_BASE_URL);
+    return api.get<Fish[]>('/fishes');
+  },
   getById: (id: string) => api.get<Fish>(`/fishes/${id}`),
+  create: (fishData: Omit<Fish, '_id' | 'createdAt' | 'updatedAt'>) =>
+    api.post<Fish>('/fishes', fishData),
+  update: (id: string, fishData: Partial<Fish>) =>
+    api.put<Fish>(`/fishes/${id}`, fishData),
+  delete: (id: string) => api.delete(`/fishes/${id}`),
 };
 
 // Order API

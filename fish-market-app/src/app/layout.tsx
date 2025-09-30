@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { CartProvider } from '@/contexts/CartContext';
 import Header from '@/components/Header';
-import WhatsAppButton from '@/components/WhatsAppButton';
+import FloatingActions from '@/components/FloatingActions';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -34,7 +34,7 @@ export default function RootLayout({
             <main className="pb-20">
               {children}
             </main>
-            <WhatsAppButton />
+            <FloatingActions />
           </div>
         </CartProvider>
       </body>

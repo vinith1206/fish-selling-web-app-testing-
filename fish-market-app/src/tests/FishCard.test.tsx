@@ -16,7 +16,7 @@ const mockFish: Fish = {
   image: 'https://example.com/fish.jpg',
   stock: 10,
   description: 'A test fish',
-  weight: 0.1,
+  weight: 100,
   origin: 'Test Origin',
   priceUnit: 'per_piece',
   careLevel: 'beginner',

@@ -120,7 +120,7 @@ export default function ManualOrdersPage() {
           image: '/images/salmon.jpg',
           stock: 50,
           description: 'Premium fresh salmon',
-          weight: 1,
+          weight: 1000,
           origin: 'Norway',
           priceUnit: 'per_kg'
         },
@@ -133,7 +133,7 @@ export default function ManualOrdersPage() {
           image: '/images/snapper.jpg',
           stock: 30,
           description: 'Fresh red snapper',
-          weight: 1,
+          weight: 1000,
           origin: 'India',
           priceUnit: 'per_kg'
         },
@@ -146,7 +146,7 @@ export default function ManualOrdersPage() {
           image: '/images/tuna.jpg',
           stock: 25,
           description: 'Premium tuna steak',
-          weight: 1,
+          weight: 1000,
           origin: 'Japan',
           priceUnit: 'per_kg'
         },
@@ -159,7 +159,7 @@ export default function ManualOrdersPage() {
           image: '/images/prawns.jpg',
           stock: 40,
           description: 'Fresh prawns',
-          weight: 1,
+          weight: 1000,
           origin: 'India',
           priceUnit: 'per_kg'
         },
@@ -172,7 +172,7 @@ export default function ManualOrdersPage() {
           image: '/images/filter.jpg',
           stock: 15,
           description: 'High-quality aquarium filter',
-          weight: 2,
+          weight: 2000,
           origin: 'China',
           priceUnit: 'per_piece'
         },
@@ -185,7 +185,7 @@ export default function ManualOrdersPage() {
           image: '/images/fish-food.jpg',
           stock: 100,
           description: 'Premium fish food',
-          weight: 0.5,
+          weight: 500,
           origin: 'India',
           priceUnit: 'per_piece'
         }

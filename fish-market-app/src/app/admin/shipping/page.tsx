@@ -348,7 +348,7 @@ export default function ShippingManagement() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Max Weight (kg)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Max Weight (grams)</label>
                 <input
                   type="number"
                   value={newRate.maxWeight || ''}
@@ -451,7 +451,7 @@ export default function ShippingManagement() {
                         <div>Base: ₹{rate.baseRate}</div>
                         {rate.perKgRate && <div>Per kg: ₹{rate.perKgRate}</div>}
                         {rate.minOrderAmount && <div>Min order: ₹{rate.minOrderAmount}</div>}
-                        {rate.maxWeight && <div>Max weight: {rate.maxWeight}kg</div>}
+                        {rate.maxWeight && <div>Max weight: {rate.maxWeight}g</div>}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
